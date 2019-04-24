@@ -7,7 +7,7 @@ pipeline {
     }
     parameters {
         string(name: "BRANCH", defaultValue: "master", description: "")
-        choice(name: "CHANNEL", choices: ["dev", "beta", "release", "nightly"], description: "")
+        choice(name: "CHANNEL", choices: ["nightly", "dev", "beta", "release"], description: "")
         booleanParam(name: "WIPE_WORKSPACE", defaultValue: false, description: "")
         booleanParam(name: "RUN_INIT", defaultValue: false, description: "")
         booleanParam(name: "DISABLE_SCCACHE", defaultValue: false, description: "")
@@ -49,7 +49,9 @@ pipeline {
                     GITHUB_CREDENTIAL_ID = "brave-builds-github-token-for-pr-builder"
                     // BRANCH_EXISTS_IN_BC = httpRequest(url: GITHUB_API + "/brave-core/branches/" + BRANCH_TO_BUILD, validResponseCodes: '100:499', authentication: GITHUB_CREDENTIAL_ID, quiet: !DEBUG).status == 200
                     SKIP = false
+                    TARGET_BRANCH = "master"
                     if (env.CHANGE_BRANCH) {
+                        TARGET_BRANCH = env.CHANGE_TARGET
                         prNumber = readJSON(text: httpRequest(url: GITHUB_API + "/brave-browser/pulls?head=brave:" + BRANCH_TO_BUILD, authentication: GITHUB_CREDENTIAL_ID, quiet: !DEBUG).content)[0].number
                         prDetails = readJSON(text: httpRequest(url: GITHUB_API + "/brave-browser/pulls/" + prNumber, authentication: GITHUB_CREDENTIAL_ID, quiet: !DEBUG).content)
                         SKIP = prDetails.mergeable_state.equals("draft") or prDetails.labels.count { label -> label.name.equals("CI/Skip") }.equals(1)
@@ -135,7 +137,7 @@ pipeline {
                                             git -C src/brave config user.name brave-builds
                                             git -C src/brave config user.email devops@brave.com
                                             git -C src/brave checkout -b ${LINT_BRANCH}
-                                            npm run lint
+                                            npm run lint -- --base=origin/${TARGET_BRANCH}
                                             git -C src/brave checkout -q -
                                             git -C src/brave branch -D ${LINT_BRANCH}
                                         """
@@ -290,7 +292,7 @@ pipeline {
                                             git -C src/brave config user.name brave-builds
                                             git -C src/brave config user.email devops@brave.com
                                             git -C src/brave checkout -b ${LINT_BRANCH}
-                                            npm run lint
+                                            npm run lint -- --base=origin/${TARGET_BRANCH}
                                             git -C src/brave checkout -q -
                                             git -C src/brave branch -D ${LINT_BRANCH}
                                         """
@@ -472,7 +474,7 @@ pipeline {
                                             git -C src/brave config user.name brave-builds
                                             git -C src/brave config user.email devops@brave.com
                                             git -C src/brave checkout -b ${LINT_BRANCH}
-                                            npm run lint
+                                            npm run lint -- --base=origin/${TARGET_BRANCH}
                                             git -C src/brave checkout -q -
                                             git -C src/brave branch -D ${LINT_BRANCH}
                                         """
@@ -646,7 +648,7 @@ pipeline {
                                             git -C src/brave config user.name brave-builds
                                             git -C src/brave config user.email devops@brave.com
                                             git -C src/brave checkout -b ${LINT_BRANCH}
-                                            npm run lint
+                                            npm run lint -- --base=origin/${TARGET_BRANCH}
                                             git -C src/brave checkout -q -
                                             git -C src/brave branch -D ${LINT_BRANCH}
                                         """
